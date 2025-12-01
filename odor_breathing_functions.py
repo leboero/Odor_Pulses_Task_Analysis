@@ -46,6 +46,44 @@ def get_conv_odor(session):
         conv_weights_all[i_trial,:] = conv_weights_sampling_epoch
     return conv_odor, conv_weights_all
 
+def get_sniff_histogram_beta(session,shuffled=False):
+    bins = np.linspace(0,250,16) #16
+    num_trials = session['num_trials']
+    s_window = session['delay_time']*1000
+    trial_pre_breath_period = len(session['trial_pre_breath'][0])
+    trial_breath_period = len(session['trial_breath'][0])
+    go_period = trial_breath_period - s_window
+    sampling_beg = trial_pre_breath_period-250
+    sampling_end = int(trial_pre_breath_period+s_window+250)
+    sniff_hist = np.zeros((num_trials,15)) #15
+        
+    for i_trial in range(num_trials):
+        sniff_raw = np.append(session['trial_pre_breath'][i_trial],session['trial_breath'][i_trial])
+        sniff = butter_lowpass_filter(sniff_raw,8,1000,3)
+        sniff = (sniff - sniff.mean() +1)/2
+        sniff_onset,_ = scipy.signal.find_peaks(sniff,distance=100)
+        sniff_onset = sniff_onset[sniff_onset>sampling_beg]
+        sniff_onset = sniff_onset[sniff_onset<sampling_end]
+        sniff_phase = np.zeros((len(sniff_raw),))
+
+        for i in range(len(sniff_onset)-1):
+            nsample = sniff_onset[i+1]-sniff_onset[i]
+            sniff_phase[sniff_onset[i]:sniff_onset[i+1]] = scipy.signal.resample(np.arange(0,250),nsample)
+        
+        sniff_phase_sampling_epoch = sniff_phase[int(trial_pre_breath_period):]
+        odor_command = session['trial_odor'][i_trial]
+
+        if shuffled:
+            n_pulses = (np.diff(odor_command)==100).sum()
+            valve_onset = np.random.randint(0,s_window,(n_pulses,))
+        else:
+            valve_onset = np.argwhere(np.diff(odor_command)==100)[0:int(s_window)]
+        odor_onset = valve_onset + 20
+        odor_phase = sniff_phase_sampling_epoch[odor_onset].squeeze()
+        hist,_ = np.histogram(odor_phase,bins)
+        sniff_hist[i_trial,:] = hist
+    return sniff_hist
+
 def get_sniff_histogram(session,shuffled=False):
     bins = np.linspace(0,250,16) #16
     num_trials = session['num_trials']
