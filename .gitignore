@@ -19,4 +19,6 @@ Trials/
 *.pptx
 *.png
 *.jpg
+*.npy
+*.h5
 
