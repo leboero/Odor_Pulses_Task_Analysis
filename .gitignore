@@ -21,4 +21,17 @@ Trials/
 *.jpg
 *.npy
 *.h5
+*.parquet
+
+# OS files
+.DS_Store
+
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
 
